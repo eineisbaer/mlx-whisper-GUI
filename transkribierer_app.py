@@ -131,6 +131,31 @@ def resolve_tool(name):
     return None
 
 
+def _child_env():
+    """Environment for spawned tools, cleaned of this process's Python settings.
+
+    Inside a py2app bundle the interpreter runs with PYTHONHOME/PYTHONPATH (etc.)
+    pointing at the bundle's stripped-down stdlib. yt-dlp and mlx_whisper are
+    separate Python programs with their own interpreter; if they inherit those
+    variables they load the bundle's incomplete stdlib and crash (e.g.
+    "No module named 'optparse'"). Strip them so each tool uses its own Python.
+
+    We also make sure the tool install dirs are on PATH, since a Finder-launched
+    bundle inherits almost none.
+    """
+    env = os.environ.copy()
+    for var in ("PYTHONHOME", "PYTHONPATH", "PYTHONEXECUTABLE",
+                "PYTHONNOUSERSITE", "PYTHONDONTWRITEBYTECODE", "PYTHONSTARTUP"):
+        env.pop(var, None)
+    existing = env.get("PATH", "")
+    parts = [d for d in EXTRA_BIN_DIRS if d not in existing.split(os.pathsep)]
+    env["PATH"] = os.pathsep.join(parts + ([existing] if existing else []))
+    return env
+
+
+CHILD_ENV = _child_env()
+
+
 @dataclass
 class Job:
     kind: str            # "url" or "file"
@@ -643,7 +668,7 @@ class TranscriberApp(_Base):
             out = subprocess.run(
                 [self.tools["yt-dlp"] or "yt-dlp", "--flat-playlist",
                  "--print", "%(id)s\t%(title)s", url],
-                capture_output=True, text=True, timeout=120)
+                capture_output=True, text=True, timeout=120, env=CHILD_ENV)
         except (subprocess.SubprocessError, OSError) as e:
             self._log(f"❌ Could not read playlist: {e}\n")
             return
@@ -749,7 +774,7 @@ class TranscriberApp(_Base):
     def _open_result(self):
         path = self._result_files.get(self.result_picker.get())
         if path and os.path.exists(path):
-            subprocess.run([self.tools["open"] or "open", path])
+            subprocess.run([self.tools["open"] or "open", path], env=CHILD_ENV)
 
     def _add_history(self, label, out_dir, files):
         self.history.insert(0, {
@@ -786,7 +811,7 @@ class TranscriberApp(_Base):
                 font=ctk.CTkFont(size=11),
                 command=lambda p=first, d=entry["dir"]: subprocess.run(
                     [self.tools["open"] or "open",
-                     p if p and os.path.exists(p) else d])
+                     p if p and os.path.exists(p) else d], env=CHILD_ENV)
             ).pack(side="right")
 
     def _clear_history(self):
@@ -802,7 +827,8 @@ class TranscriberApp(_Base):
 
     def _open_output_folder(self):
         if self.last_output_dir and os.path.isdir(self.last_output_dir):
-            subprocess.run([self.tools["open"] or "open", self.last_output_dir])
+            subprocess.run([self.tools["open"] or "open", self.last_output_dir],
+                           env=CHILD_ENV)
 
     def _clear_log(self):
         self.log_text.configure(state="normal")
@@ -830,7 +856,7 @@ class TranscriberApp(_Base):
         try:
             subprocess.run([self.tools["osascript"] or "osascript", "-e",
                             f"display notification {json.dumps(message)} "
-                            f"with title {json.dumps(title)}"], timeout=5)
+                            f"with title {json.dumps(title)}"], timeout=5, env=CHILD_ENV)
         except (subprocess.SubprocessError, OSError):
             pass
 
@@ -912,7 +938,7 @@ class TranscriberApp(_Base):
         try:
             self._caffeinate = subprocess.Popen(
                 [self.tools["caffeinate"] or "caffeinate", "-i"],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=CHILD_ENV)
         except (OSError, subprocess.SubprocessError):
             self._caffeinate = None
 
@@ -954,7 +980,8 @@ class TranscriberApp(_Base):
     def _run_stream(self, cmd, line_callback=None):
         self._log(f"$ {' '.join(cmd)}")
         self.proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0)
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0,
+            env=CHILD_ENV)
         for line in self._stream_lines(self.proc.stdout):
             handled = line_callback(line) if line_callback else False
             if not handled:
@@ -977,7 +1004,7 @@ class TranscriberApp(_Base):
                 [self.tools["ffprobe"] or "ffprobe", "-v", "error",
                  "-show_entries", "format=duration",
                  "-of", "default=noprint_wrappers=1:nokey=1", path],
-                capture_output=True, text=True, timeout=20)
+                capture_output=True, text=True, timeout=20, env=CHILD_ENV)
             return float(out.stdout.strip())
         except (subprocess.SubprocessError, ValueError, OSError):
             return None
