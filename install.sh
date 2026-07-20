@@ -138,20 +138,18 @@ else
 fi
 
 # ---------------------------------------------------------- dependencies ----
-step "Installing Python dependencies"
+step "Installing GUI dependencies"
 
 "$VPY" -m pip install --quiet --upgrade pip
 if [ -f requirements.txt ]; then
     "$VPY" -m pip install --quiet -r requirements.txt
 else
-    "$VPY" -m pip install --quiet customtkinter tkinterdnd2 yt-dlp mlx-whisper py2app
+    "$VPY" -m pip install --quiet customtkinter tkinterdnd2 py2app
 fi
-ok "dependencies installed"
+ok "GUI dependencies installed"
 
-for mod in customtkinter yt_dlp mlx_whisper; do
-    "$VPY" -c "import $mod" >/dev/null 2>&1 \
-        || die "$mod failed to import after installation."
-done
+"$VPY" -c "import customtkinter" >/dev/null 2>&1 \
+    || die "customtkinter failed to import after installation."
 ok "imports verified"
 
 if "$VPY" -c 'import tkinterdnd2' >/dev/null 2>&1; then
@@ -159,6 +157,41 @@ if "$VPY" -c 'import tkinterdnd2' >/dev/null 2>&1; then
 else
     warn "tkinterdnd2 unavailable — the app runs, but without drag & drop"
 fi
+
+# ------------------------------------------------- transcription tools ----
+# yt-dlp and mlx-whisper are run as external commands (the app shells out to
+# them), so they must live somewhere a Finder-launched .app can find — not
+# inside the venv. pipx installs each as an isolated CLI into ~/.local/bin,
+# which the app searches directly (see resolve_tool in transkribierer_app.py).
+step "Installing transcription tools (yt-dlp, mlx-whisper)"
+
+LOCAL_BIN="$HOME/.local/bin"
+
+if ! command -v pipx >/dev/null 2>&1 && [ ! -x "$LOCAL_BIN/pipx" ]; then
+    warn "pipx is not installed — it isolates yt-dlp and mlx-whisper as CLI tools."
+    if ask "Install pipx with 'brew install pipx'?"; then
+        brew install pipx
+    else
+        die "pipx is required. Install it with: brew install pipx"
+    fi
+fi
+PIPX="$(command -v pipx || echo "$LOCAL_BIN/pipx")"
+
+# pipx defaults its bin dir to ~/.local/bin; make it explicit for a Finder app.
+export PIPX_BIN_DIR="$LOCAL_BIN"
+for tool in yt-dlp mlx-whisper; do
+    if [ -x "$LOCAL_BIN/${tool%% *}" ] || "$PIPX" list 2>/dev/null | grep -q "$tool"; then
+        info "$tool already installed — upgrading"
+        "$PIPX" upgrade "$tool" >/dev/null 2>&1 || "$PIPX" install --force "$tool" >/dev/null
+    else
+        "$PIPX" install "$tool" >/dev/null
+    fi
+done
+
+# mlx-whisper's console script is named mlx_whisper (underscore).
+[ -x "$LOCAL_BIN/yt-dlp" ]      || die "yt-dlp not found in $LOCAL_BIN after install."
+[ -x "$LOCAL_BIN/mlx_whisper" ] || die "mlx_whisper not found in $LOCAL_BIN after install."
+ok "yt-dlp and mlx_whisper installed in $LOCAL_BIN"
 
 # --------------------------------------------------------------- launcher ----
 step "Writing the launcher"

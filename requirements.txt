@@ -1,8 +1,12 @@
-# Python dependencies. System dependencies (ffmpeg, Tcl/Tk) are listed in the README.
+# GUI dependencies for the app itself. System dependencies (ffmpeg, Tcl/Tk) are
+# listed in the README.
 customtkinter>=5.2
 tkinterdnd2>=0.4        # optional: drag & drop. App runs without it.
-yt-dlp>=2024.1
-mlx-whisper>=0.3
 
 # Only needed to build the .app bundle:
 py2app>=0.28
+
+# NOTE: yt-dlp and mlx-whisper are intentionally NOT here. They are the
+# transcription tools the app runs as external commands. install.sh installs
+# them with pipx into ~/.local/bin so a Finder-launched .app can find them too
+# (a py2app bundle cannot bundle mlx, which is a native namespace package).

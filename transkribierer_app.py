@@ -102,18 +102,23 @@ STATUS_COLORS = {
     "cancelled": WARN,
 }
 
-# Homebrew installs here on Apple Silicon and Intel respectively.
-EXTRA_BIN_DIRS = ("/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin")
+# Where tools may live, checked in addition to the inherited PATH. pipx (used by
+# install.sh for yt-dlp and mlx_whisper) installs into ~/.local/bin; Homebrew
+# uses the two prefixes below on Apple Silicon and Intel respectively.
+EXTRA_BIN_DIRS = (
+    os.path.expanduser("~/.local/bin"),
+    "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin",
+)
 
 
 def resolve_tool(name):
     """Find an executable without relying on the inherited PATH.
 
-    Two situations break a plain shutil.which(): running the app as
-    `venv/bin/python app.py` without activating the venv (venv/bin is not on
-    PATH), and launching a py2app bundle from Finder (which inherits a far
-    smaller PATH than a login shell). Checking next to sys.executable and in the
-    usual Homebrew prefixes covers both.
+    A py2app bundle launched from Finder inherits a far smaller PATH than a
+    login shell — it will not include ~/.local/bin or the Homebrew prefixes — so
+    a plain shutil.which() misses the tools. Checking next to sys.executable and
+    in the usual install locations covers launching from Finder, from a venv, or
+    from a plain shell.
     """
     candidates = [
         os.path.join(os.path.dirname(sys.executable), name),

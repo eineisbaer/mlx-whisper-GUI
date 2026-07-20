@@ -31,6 +31,7 @@ Metal and will not run on Intel Macs.
 ```bash
 brew install ffmpeg          # required: audio extraction + duration probing
 brew install python-tk       # required: Tcl/Tk bindings for the GUI
+brew install pipx            # required: installs yt-dlp + mlx-whisper as CLI tools
 ```
 
 `ffmpeg` is not optional — yt-dlp uses it to extract audio, and `ffprobe` (part of
@@ -85,12 +86,15 @@ python3 setup.py py2app
 
 The bundle appears at `dist/Transcriber.app`.
 
-**Known limitation:** py2app bundles the Python dependencies, but `yt-dlp`,
-`mlx_whisper` and `ffmpeg` are invoked as external commands. The app resolves
-them by looking next to its own interpreter and in the Homebrew prefixes
-(`/opt/homebrew/bin`, `/usr/local/bin`) rather than trusting the inherited
-`PATH`, which is what makes Finder-launched bundles work. A bundle copied to a
-different Mac still needs those tools installed there.
+**Known limitation:** `yt-dlp`, `mlx_whisper` and `ffmpeg` are invoked as
+external commands, not bundled into the `.app` (`mlx`, which mlx-whisper needs,
+is a native namespace package that py2app cannot bundle). `install.sh` installs
+`yt-dlp` and `mlx-whisper` with [pipx](https://pipx.pypa.io) into `~/.local/bin`;
+`ffmpeg` comes from Homebrew. The app finds all of them by looking in
+`~/.local/bin` and the Homebrew prefixes (`/opt/homebrew/bin`, `/usr/local/bin`)
+rather than trusting the inherited `PATH` — that is what makes a bundle launched
+from Finder (or dragged to `/Applications`) work. A bundle copied to a different
+Mac still needs those tools installed there.
 
 For a faster development build that symlinks instead of copying:
 

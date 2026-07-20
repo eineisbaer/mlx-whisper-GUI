@@ -26,6 +26,11 @@ ICON = 'icon/Transcriber.icns' if os.path.isfile('icon/Transcriber.icns') else N
 
 # customtkinter and tkinterdnd2 ship data files (themes, tkdnd binaries) that
 # py2app does not pick up automatically, so point at their package folders.
+#
+# yt-dlp and mlx-whisper are NOT bundled: mlx is a native, namespace-style
+# package that py2app's dependency scanner cannot graph. They are installed
+# separately (install.sh uses pipx to put them in ~/.local/bin) and the app
+# locates them there — see resolve_tool in transkribierer_app.py.
 packages = ['customtkinter']
 includes = ['tkinter']
 
