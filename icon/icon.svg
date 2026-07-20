@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5B8DEF"/>
+      <stop offset="1" stop-color="#3C6FD1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded-square tile. macOS applies its own mask, but drawing the
+       superellipse-ish radius keeps the standalone PNG looking right too. -->
+  <rect x="0" y="0" width="1024" height="1024" rx="228" ry="228" fill="url(#bg)"/>
+
+  <!-- Left: a soundwave (audio going in) -->
+  <g stroke="#FFFFFF" stroke-width="34" stroke-linecap="round" opacity="0.95">
+    <line x1="292" y1="430" x2="292" y2="594"/>
+    <line x1="366" y1="360" x2="366" y2="664"/>
+    <line x1="440" y1="452" x2="440" y2="572"/>
+  </g>
+
+  <!-- Arrow implied by the gap, then: text lines (transcript coming out) -->
+  <g stroke="#FFFFFF" stroke-width="34" stroke-linecap="round">
+    <line x1="560" y1="430" x2="760" y2="430"/>
+    <line x1="560" y1="512" x2="732" y2="512"/>
+    <line x1="560" y1="594" x2="700" y2="594"/>
+  </g>
+</svg>

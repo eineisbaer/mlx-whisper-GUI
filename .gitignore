@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Virtualenv
+venv/
+.venv/
+
+# py2app build output
+build/
+dist/
+
+# Generated launcher (written by install.sh)
+run.sh
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+
+# Icon intermediates (Transcriber.icns is committed; rebuild with icon/make_icns.sh)
+icon/icon.png
+icon/*.iconset/

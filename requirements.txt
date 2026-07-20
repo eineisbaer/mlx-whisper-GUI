@@ -1,0 +1,8 @@
+# Python dependencies. System dependencies (ffmpeg, Tcl/Tk) are listed in the README.
+customtkinter>=5.2
+tkinterdnd2>=0.4        # optional: drag & drop. App runs without it.
+yt-dlp>=2024.1
+mlx-whisper>=0.3
+
+# Only needed to build the .app bundle:
+py2app>=0.28
